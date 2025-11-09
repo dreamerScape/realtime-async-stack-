@@ -1,0 +1,13 @@
+venv/
+*.venv/
+__pycache__/
+
+.vscode/
+.idea/
+
+*.pyc
+
+.env
+
+# Docker
+docker-compose.override.yml
