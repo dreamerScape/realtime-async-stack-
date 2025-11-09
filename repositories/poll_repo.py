@@ -16,8 +16,10 @@ async def create_poll(db: AsyncSession, poll_data: PollCreate) -> Poll:
     
     db.add_all(db_options)
     
+    db_poll.options = db_options
+    
     await db.commit()
     
-    await db.refresh(db_poll)
+    # await db.refresh(db_poll)
     
     return db_poll
