@@ -12,7 +12,7 @@ class Poll(Base):
     options = relationship("PollOption", back_populates = "poll")
     
 class Option(Base):
-    _tablename__ = "options"
+    __tablename__ = "options"
 
     id = Column(Integer, primary_key=True, index=True)
     text = Column(String, nullable=False)
