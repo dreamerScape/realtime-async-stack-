@@ -7,7 +7,7 @@ from redis.asyncio import Redis
 from db.redis_conn import get_redis_client
 from services import cashe_service
 
-from shemas.poll import PollCreate, Poll as PollSchema
+from shemas.poll import PollCreate, Poll as PollSchema, Option as OptionSchema, VoteCreate
 from services import poll_service
 app = FastAPI(title="Real-time Async Stack")
 
@@ -15,7 +15,24 @@ app = FastAPI(title="Real-time Async Stack")
 # def read_root(db: AsyncSession = Depends(get_db_session)):
 #     return {"status": "ok", "db_connection": "successful"}
 
-@app.get("/polls/{poll_id}", response_model=PollSchema)
+@app.post("/polls/{poll_id}/vote", response_model = OptionSchema)
+async def vote_on_poll_endpoint(
+    poll_id: int,
+    vote_data: VoteCreate,
+    db: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis_client)
+):
+    updated_option = await poll_service.add_vote(db, poll_id, vote_data)
+    
+    if updated_option is None:
+        raise HTTPException(status_code=404, detail="Option not found or does not belong to this poll.")
+    
+    await cashe_service.clear_poll_cashe(poll_id, redis)
+    
+    return updated_option
+    
+
+@app.get("/polls/{poll_id}", response_model = PollSchema)
 async def get_poll_endpoint(
     poll_id: int,
     db: AsyncSession = Depends(get_db_session),

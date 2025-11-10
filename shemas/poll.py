@@ -23,3 +23,6 @@ class Poll(BaseModel):
     options: List[Option] = []
 
     model_config = ConfigDict(from_attributes=True)
+    
+class VoteCreate(BaseModel):
+    option_id: int
