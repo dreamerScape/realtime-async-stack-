@@ -29,7 +29,7 @@ async def procees_vote_event(event_data: dict):
         
         async with SesionLocal() as db:
             vote_data = VoteCreate(option_id=option_id)
-            updated_option = await poll_service.add_vote_to_option(db, poll_id, vote_data.option_id)
+            updated_option = await poll_repo.add_vote_to_option(db, poll_id, vote_data.option_id)
             
             if not updated_option:
                 log.warning(f"Option or Poll not found for Poll {poll_id}, Option {option_id}. Skipping.")
