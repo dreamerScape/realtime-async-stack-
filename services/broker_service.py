@@ -1,7 +1,7 @@
 from redis.asyncio import Redis
 import json
 
-VOTE_STREAM_NAME = "voye_events"
+VOTE_STREAM_NAME = "vote_events"
 
 async def publish_vote_event(poll_id: int, option_id: int, redis: Redis):
     
