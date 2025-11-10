@@ -11,6 +11,18 @@ app = FastAPI(title="Real-time Async Stack")
 # def read_root(db: AsyncSession = Depends(get_db_session)):
 #     return {"status": "ok", "db_connection": "successful"}
 
+@app.get("/polls/{poll_id}", response_model=PollSchema)
+async def get_poll_endpoint(
+    poll_id: int,
+    db: AsyncSession = Depends(get_db_session)
+):
+    poll = await poll_service.get_poll(db, poll_id)
+    if poll is None:
+        raise HTTPException(status_code=404, detail="Poll not found")
+    
+    return poll
+     
+
 @app.post("/polls", response_model=PollSchema)
 async def create_poll_endpoint(
     poll_data: PollCreate,
