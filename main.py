@@ -3,6 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from db.session import get_db_session
 
+from redis.asyncio import Redis
+from db.redis_conn import get_redis_client
+from services import cashe_service
+
 from shemas.poll import PollCreate, Poll as PollSchema
 from services import poll_service
 app = FastAPI(title="Real-time Async Stack")
@@ -14,13 +18,22 @@ app = FastAPI(title="Real-time Async Stack")
 @app.get("/polls/{poll_id}", response_model=PollSchema)
 async def get_poll_endpoint(
     poll_id: int,
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis_client)
 ):
+    cashed_poll = await cashe_service.get_poll_from_cache(poll_id, redis)
+    if cashed_poll:
+        return cashed_poll
+    
     poll = await poll_service.get_poll(db, poll_id)
     if poll is None:
         raise HTTPException(status_code=404, detail="Poll not found")
     
-    return poll
+    poll_schema = PollSchema.model_validate(poll)
+    await cashe_service.set_poll_to_cashe(poll_schema, redis)
+    
+    
+    return poll_schema
      
 
 @app.post("/polls", response_model=PollSchema)
