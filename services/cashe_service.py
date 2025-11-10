@@ -5,7 +5,7 @@ import json
 
 POLL_CASHE_PREFIX = "POLL:"
 CASHE_TTL_SECONDS = 60 * 10
-async def get_poll_from_cache(poll_id: int, redis_client: Redis) -> Optional(PollSchema):
+async def get_poll_from_cache(poll_id: int, redis_client: Redis) -> Optional[PollSchema]:
     cache_key = f"{POLL_CASHE_PREFIX}{poll_id}"
     
     cashed_poll = await redis_client.get(cache_key)
