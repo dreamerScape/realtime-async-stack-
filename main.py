@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Depends, HTTPException
+from fastapi import FastAPI,Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from db.session import get_db_session
@@ -15,21 +15,18 @@ app = FastAPI(title="Real-time Async Stack")
 # def read_root(db: AsyncSession = Depends(get_db_session)):
 #     return {"status": "ok", "db_connection": "successful"}
 
-@app.post("/polls/{poll_id}/vote", response_model = OptionSchema)
+@app.post("/polls/{poll_id}/vote", status_code=status.HTTP_202_ACCEPTED)
 async def vote_on_poll_endpoint(
     poll_id: int,
     vote_data: VoteCreate,
-    db: AsyncSession = Depends(get_db_session),
-    redis: Redis = Depends(get_redis_client)
+    response: Response,
+    redis: Redis = Depends(get_redis_client),
+    
 ):
-    updated_option = await poll_service.add_vote(db, poll_id, vote_data)
     
-    if updated_option is None:
-        raise HTTPException(status_code=404, detail="Option not found or does not belong to this poll.")
+    await poll_service.add_vote(redis, poll_id, vote_data)
     
-    await cashe_service.clear_poll_cashe(poll_id, redis)
-    
-    return updated_option
+    return {"message": "Vote accepted for processing"}
     
 
 @app.get("/polls/{poll_id}", response_model = PollSchema)
