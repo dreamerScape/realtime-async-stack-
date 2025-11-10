@@ -23,6 +23,11 @@ async def set_poll_to_cashe(poll: PollSchema, redis: Redis):
     
     await redis.setex(cashe_key, CASHE_TTL_SECONDS, poll_json)
     
+async def clear_poll_cashe(poll_id: int, redis: Redis):
+    cashe_key = f"{POLL_CASHE_PREFIX}{poll_id}"
+    
+    await redis.delete(cashe_key)
+    
     
     
     
