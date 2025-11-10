@@ -9,7 +9,7 @@ class Poll(Base):
     id =  Column(Integer, primary_key = True, index = True)
     question = Column(String, index = True, nullable = False) 
     
-    options = relationship("PollOption", back_populates = "poll")
+    options = relationship("Option", back_populates = "poll", cascade="all, delete-orphan")
     
 class Option(Base):
     __tablename__ = "options"
