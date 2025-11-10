@@ -37,3 +37,20 @@ async def get_poll_by_id(db: AsyncSession, poll_id: int ) -> Poll:
     query = select(Poll).where(Poll.id == poll_id).options(selectinload(Poll.options))
     result = await db.execute(query)
     return result.unique().scalar_one_or_none()
+
+async def add_vote_to_option(db: AsyncSession, option_id: int, poll_id: int) -> Optional[Option]:
+    query = select(Option).where(Option.id == option_id).where(Option.poll_id == poll_id)
+    result = await db.execute(query)
+    option_to_update = result.scalar_one_or_none()
+    
+    if not option_to_update:
+        return None
+    
+    option_to_update.votes += 1
+        
+    await db.commit()
+    
+    await db.refresh(option_to_update)
+    
+    return option_to_update
+    
