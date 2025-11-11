@@ -1,14 +1,24 @@
-from fastapi import FastAPI,Depends, HTTPException, status, Response
+import json
+import logging
+
+from fastapi import(
+    FastAPI, Depends, HTTPException, status, Response,
+    WebSocket, WebSocketDisconnect
+                    )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from db.session import get_db_session
 
 from redis.asyncio import Redis
 from db.redis_conn import get_redis_client
-from services import cashe_service
+from services import broker_service, cashe_service
 
 from shemas.poll import PollCreate, Poll as PollSchema, Option as OptionSchema, VoteCreate
 from services import poll_service
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
 app = FastAPI(title="Real-time Async Stack")
 
 # @app.get("/")
@@ -28,6 +38,34 @@ async def vote_on_poll_endpoint(
     
     return {"message": "Vote accepted for processing"}
     
+
+@app.websocket("/ws/polls/{poll_id}")
+async def websocker_poll_results(
+    websocket: WebSocket,
+    poll_id: int,
+    redis: Redis = Depends(get_redis_client)
+):
+    await websocket.accept()
+    
+    pubsub = redis.pubsub()
+    channel_name = f"{broker_service.POLL_UPDATE_CHANNEL_PREFIX}{poll_id}"
+    
+    try:
+        await pubsub.subscribe(channel_name)
+        
+        while True:
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=None)
+            if message and message.get('type') == 'message':
+                message_data_str = message['data']
+                await websocket.send_text(message_data_str)
+    except WebSocketDisconnect:
+        log.warning(f"Client disconnected from poll {poll_id}")
+    except Exception as e:
+        log.error(f"Error in websocket for poll {poll_id}: {e}")
+    finally:
+        await pubsub.unsubscribe(channel_name)
+        await pubsub.close()
+            
 
 @app.get("/polls/{poll_id}", response_model = PollSchema)
 async def get_poll_endpoint(
