@@ -29,7 +29,7 @@ async def procees_vote_event(redis: Redis, event_data: dict):
         
         async with SesionLocal() as db:
             vote_data = VoteCreate(option_id=option_id)
-            updated_option = await poll_repo.add_vote_to_option(db, poll_id, vote_data.option_id)
+            updated_option = await poll_repo.add_vote_to_option(db, vote_data.option_id, poll_id)
             
             if not updated_option:
                 log.warning(f"Option or Poll not found for Poll {poll_id}, Option {option_id}. Skipping.")
@@ -74,7 +74,7 @@ async def main_worker_loop():
             stream, messages = responce[0]
             message_id, event_data = messages[0]
             
-            await procees_vote_event(event_data)
+            await procees_vote_event(redis, event_data)
             
             await redis.xack(STREAM_NAME, GROUP_NAME, message_id)
         
