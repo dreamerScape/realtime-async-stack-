@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package admin;
+
+message ClosePollRequest {
+  int32 poll_id = 1;
+}
+
+message ClosePollResponse {
+  string status = 1;
+}
+
+service AdminService {
+  rpc ClosePoll (ClosePollRequest) returns (ClosePollResponse);
+}

@@ -16,6 +16,8 @@ from services import broker_service, cashe_service
 from shemas.poll import PollCreate, Poll as PollSchema, Option as OptionSchema, VoteCreate
 from services import poll_service
 
+from services import grpc_client
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
@@ -24,6 +26,25 @@ app = FastAPI(title="Real-time Async Stack")
 # @app.get("/")
 # def read_root(db: AsyncSession = Depends(get_db_session)):
 #     return {"status": "ok", "db_connection": "successful"}
+
+@app.post("/polls/{poll_id}/close", status_code=status.HTTP_200_OK)
+async def close_poll_endpoint(
+    poll_id: int,
+    redis: Redis = Depends(get_redis_client) # Нужен для очистки кэша
+):
+
+
+    status_message = await grpc_client.close_poll_via_grpc(poll_id=poll_id)
+
+    if "not found" in status_message.lower():
+        raise HTTPException(status_code=404, detail=status_message)
+
+    if "error" in status_message.lower():
+        raise HTTPException(status_code=500, detail=status_message)
+
+    await cashe_service.clear_poll_cashe(poll_id=poll_id, redis=redis)
+
+    return {"status": status_message}
 
 @app.post("/polls/{poll_id}/vote", status_code=status.HTTP_202_ACCEPTED)
 async def vote_on_poll_endpoint(
